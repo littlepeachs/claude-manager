@@ -104,31 +104,6 @@ async def get_chat_page(session_id: str):
         raise HTTPException(status_code=404, detail="Chat page not found")
 
 
-@app.get("/api/billing")
-async def get_billing_info():
-    """获取 API 计费信息"""
-    try:
-        async with httpx.AsyncClient(timeout=10.0) as client:
-            response = await client.get("http://154.92.5.72:8080/keys")
-
-            if response.status_code == 200:
-                data = response.json()
-                return {
-                    "success": True,
-                    "data": data
-                }
-            else:
-                return {
-                    "success": False,
-                    "error": f"API 返回错误: {response.status_code}"
-                }
-    except Exception as e:
-        return {
-            "success": False,
-            "error": str(e)
-        }
-
-
 @app.get("/api/sessions")
 async def get_sessions():
     """获取所有会话列表（REST API）"""

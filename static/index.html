@@ -735,14 +735,6 @@
                 <div class="label">总内存占用</div>
                 <div class="value">{{ summary.total_memory_mb }} MB</div>
             </div>
-            <div class="summary-card" v-if="billingInfo">
-                <div class="label">今日费用</div>
-                <div class="value">${{ billingInfo.today }}</div>
-            </div>
-            <div class="summary-card" v-if="billingInfo">
-                <div class="label">近30天费用</div>
-                <div class="value">${{ billingInfo.last30days }}</div>
-            </div>
         </div>
 
         <!-- 会话卡片网格 -->
@@ -980,7 +972,6 @@
                         total_tokens: 0,
                         total_memory_mb: 0
                     },
-                    billingInfo: null,
                     ws: null,
                     connectionError: null,
                     activeSession: null,
@@ -1005,9 +996,6 @@
             mounted() {
                 this.connectWebSocket();
                 this.loadAvailableFolders();
-                this.loadBillingInfo();
-                // 每30秒刷新一次计费信息
-                setInterval(() => this.loadBillingInfo(), 30000);
                 // 请求桌面通知权限
                 this.requestNotificationPermission();
             },
@@ -1300,43 +1288,6 @@
                         }
                     } catch (error) {
                         console.error('加载文件夹列表失败:', error);
-                    }
-                },
-                async loadBillingInfo() {
-                    try {
-                        const response = await fetch('/api/billing');
-                        if (response.ok) {
-                            const result = await response.json();
-                            if (result.success && result.data) {
-                                // 解析计费数据
-                                const keys = result.data;
-                                let todayTotal = 0;
-                                let last30daysTotal = 0;
-
-                                // 遍历所有 API key 统计费用
-                                for (const key of keys) {
-                                    if (key.usage) {
-                                        // 提取今日和近30天的费用
-                                        const todayMatch = key.usage.match(/今日[：:]\s*\$?([\d.]+)/);
-                                        const last30Match = key.usage.match(/近30天[：:]\s*\$?([\d.]+)/);
-
-                                        if (todayMatch) {
-                                            todayTotal += parseFloat(todayMatch[1]) || 0;
-                                        }
-                                        if (last30Match) {
-                                            last30daysTotal += parseFloat(last30Match[1]) || 0;
-                                        }
-                                    }
-                                }
-
-                                this.billingInfo = {
-                                    today: todayTotal.toFixed(4),
-                                    last30days: last30daysTotal.toFixed(4)
-                                };
-                            }
-                        }
-                    } catch (error) {
-                        console.error('加载计费信息失败:', error);
                     }
                 },
                 closeCreateModal() {
