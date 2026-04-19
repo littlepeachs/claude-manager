@@ -61,10 +61,6 @@ cp config.example.json config.json
 
 ```json
 {
-  "billing": {
-    "base_path": "/path/to/your/claude/projects",
-    "description": "Claude 项目的基础路径，通常是你存放 Claude 相关项目的目录"
-  },
   "server": {
     "host": "0.0.0.0",
     "port": 8765,
@@ -84,7 +80,6 @@ cp config.example.json config.json
 
 **配置说明：**
 
-- `billing.base_path`: 你的 Claude 项目根目录，例如 `/Users/yourname/Desktop/Research/claude`
 - `server.host`: 服务器监听地址，`0.0.0.0` 表示允许局域网访问
 - `server.port`: 服务器端口，默认 8765
 - `iterm.window_bounds`: iTerm2 窗口的位置和大小（x, y, width, height）
@@ -136,14 +131,6 @@ Dashboard 会自动检测所有运行中的 Claude Code 会话，包括：
 
 2. **终止会话**: 点击"终止"按钮停止会话
 
-### 查看费用统计
-
-点击右上角的"💰 费用统计"按钮，查看：
-- 今日费用
-- 本周费用
-- 本月费用
-- 总费用
-
 ## 项目结构
 
 ```
@@ -152,7 +139,6 @@ claude_tool/
 ├── monitor.py             # 会话数据采集模块
 ├── tmux_manager.py        # Tmux 会话管理
 ├── session_monitor.py     # 会话状态监控
-├── billing_parser.py      # 费用统计解析
 ├── requirements.txt       # Python 依赖
 ├── config.example.json    # 配置文件示例
 ├── config.json           # 配置文件（需自行创建）
@@ -189,7 +175,6 @@ Dashboard 从以下位置读取数据：
 - `GET /` - 主页面
 - `GET /api/sessions` - 获取所有会话
 - `GET /api/summary` - 获取统计摘要
-- `GET /api/billing` - 获取费用统计
 - `POST /api/sessions/{session_id}/open-iterm` - 在 iTerm2 中打开会话
 - `DELETE /api/sessions/{session_id}` - 终止会话
 - `WebSocket /ws` - 实时数据推送
