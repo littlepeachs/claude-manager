@@ -5,7 +5,6 @@
 ## 功能特性
 
 - 🔍 **实时监控**: 自动发现并监控所有运行中的 Claude Code 进程
-- 📊 **Token 统计**: 显示每个会话的 token 消耗（输入/输出/缓存）
 - 💬 **当前主题**: 展示每个会话正在讨论的内容
 - 📈 **资源监控**: 实时显示内存和 CPU 使用情况
 - 🖥️ **Tmux 集成**: 支持在 iTerm2 中打开和管理 tmux 会话
@@ -162,7 +161,7 @@ claude_tool/
 Dashboard 从以下位置读取数据：
 
 - `~/.claude/sessions/` - 活跃会话信息
-- `~/.claude/projects/` - 对话历史和 token 统计
+- `~/.claude/projects/` - 对话历史
 - `~/.claude/history.jsonl` - 命令历史
 - `~/.claude/backups/` - 备份和统计数据
 
