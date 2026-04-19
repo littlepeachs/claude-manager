@@ -1,0 +1,20 @@
+{
+  "billing": {
+    "base_path": "/path/to/your/claude/projects",
+    "description": "Claude 项目的基础路径，通常是你存放 Claude 相关项目的目录"
+  },
+  "server": {
+    "host": "0.0.0.0",
+    "port": 8765,
+    "description": "Dashboard 服务器配置"
+  },
+  "iterm": {
+    "window_bounds": {
+      "x": 0,
+      "y": 0,
+      "width": 1920,
+      "height": 1080
+    },
+    "description": "iTerm2 窗口大小配置"
+  }
+}

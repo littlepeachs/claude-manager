@@ -1,0 +1,712 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Claude Chat</title>
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: #f8f9fa;
+            color: #1f1f1f;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        #app {
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+        }
+
+        /* 顶部工具栏 */
+        .toolbar {
+            background: white;
+            border-bottom: 1px solid #e5e7eb;
+            padding: 15px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+            z-index: 100;
+        }
+
+        .toolbar-left {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .back-btn {
+            background: #f3f4f6;
+            color: #374151;
+            border: 1px solid #e5e7eb;
+            padding: 8px 16px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.3s;
+        }
+
+        .back-btn:hover {
+            background: #e5e7eb;
+        }
+
+        .session-info {
+            color: #1f2937;
+        }
+
+        .session-name {
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 4px;
+        }
+
+        .session-path {
+            font-size: 12px;
+            opacity: 0.6;
+            font-family: 'Monaco', 'Courier New', monospace;
+        }
+
+        .toolbar-right {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+
+        .mode-selector {
+            display: flex;
+            gap: 5px;
+            background: #f3f4f6;
+            padding: 4px;
+            border-radius: 8px;
+        }
+
+        .mode-btn {
+            background: transparent;
+            color: #6b7280;
+            border: none;
+            padding: 6px 12px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 13px;
+            transition: all 0.3s;
+        }
+
+        .mode-btn.active {
+            background: white;
+            color: #2563eb;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        }
+
+        .mode-btn:hover:not(.active) {
+            background: #e5e7eb;
+        }
+
+        .stop-btn {
+            background: #ef4444;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            transition: all 0.3s;
+        }
+
+        .stop-btn:hover {
+            background: #dc2626;
+        }
+
+        .terminate-btn {
+            background: #f3f4f6;
+            color: #6b7280;
+            border: 1px solid #e5e7eb;
+            padding: 8px 16px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.3s;
+        }
+
+        .terminate-btn:hover {
+            background: #e5e7eb;
+        }
+
+        .iterm-btn {
+            background: #f3f4f6;
+            color: #6b7280;
+            border: 1px solid #e5e7eb;
+            padding: 8px 16px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.3s;
+        }
+
+        .iterm-btn:hover {
+            background: #e5e7eb;
+        }
+
+        /* 对话区域 */
+        .chat-container {
+            flex: 1;
+            overflow-y: auto;
+            padding: 20px;
+            background: #f8f9fa;
+        }
+
+        .chat-messages {
+            max-width: 900px;
+            margin: 0 auto;
+        }
+
+        .message {
+            margin-bottom: 20px;
+            padding: 15px 18px;
+            border-radius: 12px;
+            line-height: 1.6;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            max-width: 75%;
+        }
+
+        .message.user {
+            background: #e3f2fd;
+            color: #1e3a8a;
+            margin-left: auto;
+            margin-right: 0;
+            border: 1px solid #bbdefb;
+        }
+
+        .message.assistant {
+            background: white;
+            color: #1f2937;
+            border: 1px solid #e5e7eb;
+            margin-right: auto;
+            margin-left: 0;
+            box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+        }
+
+        .message.system {
+            background: #fef3c7;
+            border: 1px solid #fde68a;
+            text-align: center;
+            font-size: 13px;
+            color: #92400e;
+            margin: 0 auto;
+            max-width: 500px;
+        }
+
+        .message-content {
+            font-size: 14px;
+        }
+
+        .message-time {
+            font-size: 11px;
+            opacity: 0.7;
+            margin-top: 8px;
+        }
+
+        /* 底部输入区 */
+        .input-container {
+            background: white;
+            border-top: 1px solid #e5e7eb;
+            padding: 20px;
+            box-shadow: 0 -1px 3px rgba(0, 0, 0, 0.05);
+        }
+
+        .input-wrapper {
+            max-width: 900px;
+            margin: 0 auto;
+        }
+
+        .input-tools {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+
+        .slash-commands {
+            display: flex;
+            gap: 5px;
+            flex-wrap: wrap;
+        }
+
+        .slash-btn {
+            background: #f3f4f6;
+            color: #4b5563;
+            border: 1px solid #e5e7eb;
+            padding: 6px 12px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 12px;
+            transition: all 0.3s;
+        }
+
+        .slash-btn:hover {
+            background: #e5e7eb;
+        }
+
+        .image-upload {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .upload-btn {
+            background: #f3f4f6;
+            color: #4b5563;
+            border: 1px solid #e5e7eb;
+            padding: 6px 12px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 12px;
+            transition: all 0.3s;
+        }
+
+        .upload-btn:hover {
+            background: #e5e7eb;
+        }
+
+        .image-preview {
+            max-width: 100px;
+            max-height: 100px;
+            border-radius: 8px;
+            border: 1px solid #e5e7eb;
+        }
+
+        .input-box {
+            display: flex;
+            gap: 10px;
+            align-items: flex-end;
+        }
+
+        .input-box textarea {
+            flex: 1;
+            padding: 12px 16px;
+            border: 1px solid #e5e7eb;
+            border-radius: 10px;
+            font-size: 14px;
+            font-family: inherit;
+            outline: none;
+            resize: none;
+            min-height: 60px;
+            max-height: 200px;
+            transition: all 0.3s;
+        }
+
+        .input-box textarea:focus {
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+        }
+
+        .send-btn {
+            background: #3b82f6;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 10px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            transition: all 0.3s;
+            white-space: nowrap;
+        }
+
+        .send-btn:hover:not(:disabled) {
+            background: #2563eb;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+        }
+
+        .send-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #6b7280;
+        }
+
+        .error {
+            background: #fee2e2;
+            color: #dc2626;
+            padding: 15px;
+            border-radius: 12px;
+            margin: 20px;
+            text-align: center;
+        }
+
+        /* 滚动条样式 */
+        .chat-container::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        .chat-container::-webkit-scrollbar-track {
+            background: #f8f9fa;
+        }
+
+        .chat-container::-webkit-scrollbar-thumb {
+            background: #d1d5db;
+            border-radius: 4px;
+        }
+
+        .chat-container::-webkit-scrollbar-thumb:hover {
+            background: #9ca3af;
+        }
+    </style>
+</head>
+<body>
+    <div id="app">
+        <!-- 顶部工具栏 -->
+        <div class="toolbar">
+            <div class="toolbar-left">
+                <button class="back-btn" @click="goBack">← 返回</button>
+                <div class="session-info">
+                    <div class="session-name">{{ session?.project_name || 'Loading...' }}</div>
+                    <div class="session-path">{{ session?.cwd }}</div>
+                </div>
+            </div>
+            <div class="toolbar-right">
+                <div class="mode-selector">
+                    <button class="mode-btn" :class="{ active: currentMode === 'ask' }" @click="switchMode('ask')">
+                        Ask
+                    </button>
+                    <button class="mode-btn" :class="{ active: currentMode === 'autoedit' }" @click="switchMode('autoedit')">
+                        AutoEdit
+                    </button>
+                    <button class="mode-btn" :class="{ active: currentMode === 'plan' }" @click="switchMode('plan')">
+                        Plan
+                    </button>
+                </div>
+                <button class="iterm-btn" @click="openInIterm">🖥️ iTerm2</button>
+                <button class="stop-btn" @click="stopResponse">⏹ 停止</button>
+                <button class="terminate-btn" @click="terminateSession">🗑️ 终止会话</button>
+            </div>
+        </div>
+
+        <!-- 对话区域 -->
+        <div class="chat-container" ref="chatContainer">
+            <div v-if="loading" class="loading">
+                加载中...
+            </div>
+            <div v-else-if="error" class="error">
+                {{ error }}
+            </div>
+            <div v-else class="chat-messages">
+                <div v-for="(msg, index) in messages" :key="index" class="message" :class="msg.type">
+                    <div class="message-content" v-html="renderMarkdown(msg.content)"></div>
+                    <div class="message-time">{{ msg.time }}</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 底部输入区 -->
+        <div class="input-container">
+            <div class="input-wrapper">
+                <div class="input-tools">
+                    <div class="slash-commands">
+                        <button class="slash-btn" @click="insertCommand('/commit')">💾 /commit</button>
+                        <button class="slash-btn" @click="insertCommand('/review-pr')">🔍 /review-pr</button>
+                        <button class="slash-btn" @click="insertCommand('/test')">🧪 /test</button>
+                        <button class="slash-btn" @click="insertCommand('/fix')">🔧 /fix</button>
+                        <button class="slash-btn" @click="insertCommand('/refactor')">♻️ /refactor</button>
+                    </div>
+                    <div class="image-upload">
+                        <input type="file" ref="imageInput" @change="handleImageUpload" accept="image/*" style="display: none;">
+                        <button class="upload-btn" @click="$refs.imageInput.click()">📎 上传图片</button>
+                        <img v-if="uploadedImage" :src="uploadedImage" class="image-preview" @click="uploadedImage = null" title="点击移除">
+                    </div>
+                </div>
+                <div class="input-box">
+                    <textarea
+                        v-model="inputMessage"
+                        @keydown.enter.exact.prevent="sendMessage"
+                        @keydown.enter.shift.exact="inputMessage += '\n'"
+                        placeholder="输入消息... (Enter 发送, Shift+Enter 换行)"
+                        :disabled="sending"
+                    ></textarea>
+                    <button class="send-btn" @click="sendMessage" :disabled="sending || !inputMessage.trim()">
+                        {{ sending ? '发送中...' : '发送' }}
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const { createApp } = Vue;
+
+        createApp({
+            data() {
+                return {
+                    sessionId: '',
+                    session: null,
+                    messages: [],
+                    inputMessage: '',
+                    sending: false,
+                    loading: true,
+                    error: null,
+                    ws: null,
+                    currentMode: 'ask',
+                    uploadedImage: null
+                }
+            },
+            mounted() {
+                // 从 URL 获取 session_id
+                const pathParts = window.location.pathname.split('/');
+                this.sessionId = pathParts[pathParts.length - 1];
+
+                this.loadSession();
+                this.connectWebSocket();
+            },
+            methods: {
+                async loadSession() {
+                    try {
+                        const response = await fetch(`/api/sessions/${this.sessionId}`);
+                        if (response.ok) {
+                            this.session = await response.json();
+                            this.loading = false;
+
+                            // 加载历史消息
+                            await this.loadHistory();
+                        } else {
+                            this.error = '会话不存在';
+                            this.loading = false;
+                        }
+                    } catch (error) {
+                        this.error = `加载失败: ${error.message}`;
+                        this.loading = false;
+                    }
+                },
+                async loadHistory() {
+                    try {
+                        const response = await fetch(`/api/sessions/${this.sessionId}/history`);
+                        if (response.ok) {
+                            const data = await response.json();
+                            // 将历史转换为消息格式
+                            if (data.raw_content) {
+                                this.messages.push({
+                                    type: 'system',
+                                    content: '已连接到会话，开始实时输出...',
+                                    time: new Date().toLocaleTimeString()
+                                });
+                            }
+                        }
+                    } catch (error) {
+                        console.error('加载历史失败:', error);
+                    }
+                },
+                connectWebSocket() {
+                    const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+                    const wsUrl = `${protocol}//${window.location.host}/ws/chat/${this.sessionId}`;
+
+                    console.log('连接 WebSocket:', wsUrl);
+                    this.ws = new WebSocket(wsUrl);
+
+                    this.ws.onopen = () => {
+                        console.log('WebSocket 连接成功');
+                    };
+
+                    this.ws.onmessage = (event) => {
+                        const data = JSON.parse(event.data);
+                        console.log('收到 WebSocket 消息:', data);
+
+                        if (data.type === 'message') {
+                            // 新的消息格式：{ type: 'message', message: { type: 'user'|'assistant', content: '...' } }
+                            const msg = data.message;
+                            console.log('添加消息:', msg.type, msg.content.substring(0, 50));
+
+                            this.messages.push({
+                                type: msg.type,
+                                content: msg.content,
+                                time: new Date().toLocaleTimeString()
+                            });
+
+                            // 自动滚动到底部
+                            this.$nextTick(() => {
+                                this.scrollToBottom();
+                            });
+                        } else if (data.type === 'error') {
+                            console.error('WebSocket 错误:', data.message);
+                            this.error = data.message;
+                        } else {
+                            console.warn('未知消息类型:', data.type);
+                        }
+                    };
+
+                    this.ws.onerror = (error) => {
+                        console.error('WebSocket 错误:', error);
+                    };
+
+                    this.ws.onclose = () => {
+                        console.log('WebSocket 连接关闭，3秒后重连...');
+                        setTimeout(() => this.connectWebSocket(), 3000);
+                    };
+                },
+                async sendMessage() {
+                    if (!this.inputMessage.trim() && !this.uploadedImage) return;
+
+                    this.sending = true;
+
+                    // 添加用户消息到界面
+                    this.messages.push({
+                        type: 'user',
+                        content: this.inputMessage,
+                        time: new Date().toLocaleTimeString()
+                    });
+
+                    const messageToSend = this.inputMessage;
+                    const imageToSend = this.uploadedImage;
+
+                    this.inputMessage = '';
+                    this.uploadedImage = null;
+
+                    try {
+                        const response = await fetch(`/api/sessions/${this.sessionId}/send`, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                                session_id: this.sessionId,
+                                message: messageToSend,
+                                mode: this.currentMode,
+                                image: imageToSend
+                            })
+                        });
+
+                        if (!response.ok) {
+                            const error = await response.json();
+                            this.messages.push({
+                                type: 'system',
+                                content: `发送失败: ${error.detail}`,
+                                time: new Date().toLocaleTimeString()
+                            });
+                        }
+                    } catch (error) {
+                        this.messages.push({
+                            type: 'system',
+                            content: `发送失败: ${error.message}`,
+                            time: new Date().toLocaleTimeString()
+                        });
+                    } finally {
+                        this.sending = false;
+                        this.scrollToBottom();
+                    }
+                },
+                async stopResponse() {
+                    try {
+                        const response = await fetch(`/api/sessions/${this.sessionId}/stop`, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ session_id: this.sessionId })
+                        });
+
+                        if (response.ok) {
+                            this.messages.push({
+                                type: 'system',
+                                content: '已发送停止信号',
+                                time: new Date().toLocaleTimeString()
+                            });
+                        }
+                    } catch (error) {
+                        console.error('停止失败:', error);
+                    }
+                },
+                async terminateSession() {
+                    if (!confirm('确定要终止此会话吗？这将关闭 tmux 会话。')) return;
+
+                    try {
+                        const response = await fetch(`/api/sessions/${this.sessionId}`, {
+                            method: 'DELETE'
+                        });
+
+                        if (response.ok) {
+                            alert('会话已终止');
+                            window.location.href = '/';
+                        }
+                    } catch (error) {
+                        alert(`终止失败: ${error.message}`);
+                    }
+                },
+                async openInIterm() {
+                    try {
+                        const response = await fetch(`/api/sessions/${this.sessionId}/open-iterm`, {
+                            method: 'POST'
+                        });
+
+                        if (response.ok) {
+                            const data = await response.json();
+                            this.messages.push({
+                                type: 'system',
+                                content: data.message,
+                                time: new Date().toLocaleTimeString()
+                            });
+                        } else {
+                            const error = await response.json();
+                            alert(`打开失败: ${error.detail}`);
+                        }
+                    } catch (error) {
+                        alert(`打开失败: ${error.message}`);
+                    }
+                },
+                switchMode(mode) {
+                    this.currentMode = mode;
+                    this.messages.push({
+                        type: 'system',
+                        content: `切换到 ${mode.toUpperCase()} 模式`,
+                        time: new Date().toLocaleTimeString()
+                    });
+                },
+                insertCommand(command) {
+                    this.inputMessage = command + ' ';
+                    this.$nextTick(() => {
+                        this.$refs.chatContainer.querySelector('textarea')?.focus();
+                    });
+                },
+                handleImageUpload(event) {
+                    const file = event.target.files[0];
+                    if (!file) return;
+
+                    const reader = new FileReader();
+                    reader.onload = (e) => {
+                        this.uploadedImage = e.target.result;
+                    };
+                    reader.readAsDataURL(file);
+                },
+                scrollToBottom() {
+                    const container = this.$refs.chatContainer;
+                    if (container) {
+                        container.scrollTop = container.scrollHeight;
+                    }
+                },
+                goBack() {
+                    window.location.href = '/';
+                },
+                renderMarkdown(content) {
+                    if (typeof marked !== 'undefined') {
+                        return marked.parse(content);
+                    }
+                    return content.replace(/\n/g, '<br>');
+                }
+            },
+            beforeUnmount() {
+                if (this.ws) {
+                    this.ws.close();
+                }
+            }
+        }).mount('#app');
+    </script>
+</body>
+</html>
